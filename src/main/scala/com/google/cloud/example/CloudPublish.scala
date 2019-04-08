@@ -1,10 +1,11 @@
 package com.google.cloud.example
 
+import com.google.api.core.ApiFuture
+import com.google.api.gax.batching.BatchingSettings
 import com.google.cloud.example.CloudPublishConfig.Config
 import com.google.cloud.example.protobuf._
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.pubsub.v1.{ProjectTopicName, PubsubMessage}
-import org.apache.beam.sdk.options.PipelineOptionsFactory
 import org.slf4j.LoggerFactory
 
 object CloudPublish {
@@ -17,14 +18,20 @@ object CloudPublish {
   def main(args: Array[String]): Unit = {
     CloudPublishConfig.Parser.parse(args, Config()) match {
       case Some(config) =>
-        run(config.project, config.topic, n = 10000, vmCount = 16)
+        run(config.project, config.topic, n = 1000, vmCount = 8)
       case _ =>
         logger.error(s"Failed to parse args: '${args.mkString(" ")}'")
     }
   }
 
   def run(projectId: String, topicId: String, n: Int, vmCount: Int): Unit = {
-    val publisher = Publisher.newBuilder(ProjectTopicName.of(projectId, topicId)).build
+    val publisher = Publisher
+      .newBuilder(ProjectTopicName.of(projectId, topicId))
+      .setBatchingSettings(BatchingSettings.newBuilder()
+        .setElementCountThreshold(32L)
+        .setIsEnabled(true)
+        .build())
+      .build
     val t = System.currentTimeMillis()
     for (i <- 0 until n){
       val ip = s"10.${i%64}.${i%128}.${i%256}"
@@ -217,17 +224,16 @@ object CloudPublish {
       }
       publish(m.build, publisher)
 
-      if (i % 1000 == 0) {
+      if (i % 100 == 0) {
         logger.info(s"published $i of $n")
       }
     }
-
     publisher.shutdown()
   }
 
-  def publish(m: Metrics, publisher: Publisher): Unit = {
+  def publish(m: Metrics, publisher: Publisher): ApiFuture[String] = {
     publisher.publish(PubsubMessage.newBuilder()
       .setData(m.toByteString)
-      .build()).get()
+      .build())
   }
 }
