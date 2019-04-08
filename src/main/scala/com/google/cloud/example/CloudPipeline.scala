@@ -62,14 +62,14 @@ object CloudPipeline {
         .fromSubscription(subscription))
       .apply(ParDo.of(new DoFn[PubsubMessage,Metrics] {
         @ProcessElement
-        private[examples] def process(c: ProcessContext): Unit = {
+        private[example] def process(c: ProcessContext): Unit = {
           val metrics = Metrics.parseFrom(c.element().getPayload)
           c.output(metrics)
         }
       }))
       .apply(ParDo.of(new DoFn[Metrics,KV[ByteString,java.lang.Iterable[Mutation]]] {
         @ProcessElement
-        private[examples] def process(c: ProcessContext): Unit = {
+        private[example] def process(c: ProcessContext): Unit = {
           val metrics: Metrics = c.element()
           val rowKey = buildRowKey(metrics.getHostInfo, metrics.getTimestamp/1000L)
           val m = Mutation.newBuilder().setSetCell(
