@@ -12,8 +12,8 @@ object CloudQueryConfig{
                     topN: Int = 3)
 
   val Parser: scopt.OptionParser[Config] =
-    new scopt.OptionParser[Config]("CloudPublish") {
-      head("CloudPublish", "3.x")
+    new scopt.OptionParser[Config]("CloudQuery") {
+      head("CloudQuery", "3.x")
 
       opt[String]('p', "project")
         .action{(x, c) => c.copy(project = x)}
