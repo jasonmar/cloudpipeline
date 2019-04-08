@@ -132,9 +132,7 @@ libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
 libraryDependencies ++= Seq(
   "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % "2.11.0",
-  "com.google.apis" % "google-api-services-logging" % "v2beta1-rev623-1.25.0" excludeAll exGuava,
-  "com.google.cloud" % "google-cloud-bigquery" % "1.55.0" excludeAll(exGuava, exAuth),
-"com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth)
+  "com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth)
 )
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
