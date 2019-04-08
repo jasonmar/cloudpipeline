@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory
 object CloudPipeline {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  /** Query metrics for (dc,region,host)
+    */
   def buildRowKey(h: HostInfo, ts: Long): ByteString = {
     val k = s"${h.getDc}#${h.getCloudRegion}#${h.getHost}#$ts"
     ByteString.copyFrom(k, StandardCharsets.UTF_8)

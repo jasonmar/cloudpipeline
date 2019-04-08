@@ -1,29 +1,42 @@
 package com.google.cloud.example
 
+import com.google.cloud.example.CloudPublishConfig.Config
 import com.google.cloud.example.protobuf._
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.pubsub.v1.{ProjectTopicName, PubsubMessage}
 import org.apache.beam.sdk.options.PipelineOptionsFactory
+import org.slf4j.LoggerFactory
 
 object CloudPublish {
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def usage(): Unit = {
     System.out.println("Usage: CloudPublish <project> <topic>")
     System.exit(1)
   }
   def main(args: Array[String]): Unit = {
-    val options = PipelineOptionsFactory.fromArgs(args: _*).withValidation().as(classOf[CloudPublishOptions])
-    val n = 10000
-    run(options.getProject, options.getTopic, n)
+    CloudPublishConfig.Parser.parse(args, Config()) match {
+      case Some(config) =>
+        run(config.project, config.topic, n = 10000, vmCount = 16)
+      case _ =>
+        logger.error(s"Failed to parse args: '${args.mkString(" ")}'")
+    }
   }
 
-  def run(projectId: String, topicId: String, n: Int): Unit = {
+  def run(projectId: String, topicId: String, n: Int, vmCount: Int): Unit = {
     val publisher = Publisher.newBuilder(ProjectTopicName.of(projectId, topicId)).build
-
     val t = System.currentTimeMillis()
     for (i <- 0 until n){
       val ip = s"10.${i%64}.${i%128}.${i%256}"
       val m: Metrics.Builder = Metrics.newBuilder()
+        .setHostInfo(HostInfo.newBuilder()
+          .setCloudRegion(s"r${i%3}")
+          .setDc(s"dc${i%4}")
+          .setHost(s"h${i%100}")
+          .setIp(ip)
+          .setMdom("mdom")
+          .setNodetype("nodetype")
+          .setRack(s"r${i%256}"))
         .setTimestamp(t)
         .setHost(HostMetrics.newBuilder()
           .setCpuMetrics(CPUMetrics.newBuilder()
@@ -167,49 +180,46 @@ object CloudPublish {
             .setUdpliteSndbuferrors(0)
           )
         )
-      m.addVmBuilder()
-        .setVmid(s"$i")
-        .setCpu(VMCPUMetrics.newBuilder()
-          .setAggregateCputime(0)
-          .setAggregateSystemTime(0)
-          .setAggregateUserTime(0)
-          .setCpuDataCputime(0)
-          .setCpuDataCputimePercent(0))
-        .setDisk(VMDiskMetrics.newBuilder()
-          .setDiskName(s"/dev/sda")
-          .setErrors(0)
-          .setReadBytes(0)
-          .setReadReq(0)
-          .setWriteBytes(0)
-          .setWriteReq(0))
-        .setMem(VMMemMetrics.newBuilder()
-          .setFreeMemory(0)
-          .setMemoryUtil(0)
-          .setTotalMemory(0)
-        )
-        .setNet(VMNetMetrics.newBuilder()
-          .setInterfaceName("eth0")
-          .setRxBytes(0)
-          .setRxDrop(0)
-          .setRxErrs(0)
-          .setRxPackets(0)
-          .setTxBytes(0)
-          .setTxDrop(0)
-          .setTxErrs(0)
-          .setTxPackets(0)
-        )
-        .setIp(ip)
-      m.setHostInfo(HostInfo.newBuilder()
-        .setCloudRegion(s"r${i%3}")
-        .setDc(s"dc${i%4}")
-        .setHost(s"h${i%100}")
-        .setIp(ip)
-        .setMdom("mdom")
-        .setNodetype("nodetype")
-        .setRack(s"r${i%256}")
-      )
 
+      for (j <- 0 until vmCount) {
+        m.addVmBuilder()
+          .setVmid(s"vm$j")
+          .setCpu(VMCPUMetrics.newBuilder()
+            .setAggregateCputime(0)
+            .setAggregateSystemTime(0)
+            .setAggregateUserTime(0)
+            .setCpuDataCputime(0)
+            .setCpuDataCputimePercent(0))
+          .setDisk(VMDiskMetrics.newBuilder()
+            .setDiskName(s"/dev/sda")
+            .setErrors(0)
+            .setReadBytes(0)
+            .setReadReq(0)
+            .setWriteBytes(0)
+            .setWriteReq(0))
+          .setMem(VMMemMetrics.newBuilder()
+            .setFreeMemory(0)
+            .setMemoryUtil(0)
+            .setTotalMemory(0)
+          )
+          .setNet(VMNetMetrics.newBuilder()
+            .setInterfaceName("eth0")
+            .setRxBytes(0)
+            .setRxDrop(0)
+            .setRxErrs(0)
+            .setRxPackets(0)
+            .setTxBytes(0)
+            .setTxDrop(0)
+            .setTxErrs(0)
+            .setTxPackets(0)
+          )
+          .setIp(ip)
+      }
       publish(m.build, publisher)
+
+      if (i % 1000 == 0) {
+        logger.info(s"published $i of $n")
+      }
     }
 
     publisher.shutdown()
@@ -218,6 +228,6 @@ object CloudPublish {
   def publish(m: Metrics, publisher: Publisher): Unit = {
     publisher.publish(PubsubMessage.newBuilder()
       .setData(m.toByteString)
-      .build())
+      .build()).get()
   }
 }

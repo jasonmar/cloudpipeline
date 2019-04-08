@@ -132,6 +132,7 @@ libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
 libraryDependencies ++= Seq(
   "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % "2.11.0",
+  "com.github.scopt" %% "scopt" % "3.7.1",
   "com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth)
 )
 
