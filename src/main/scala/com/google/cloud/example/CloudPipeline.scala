@@ -43,6 +43,10 @@ object CloudPipeline {
 
   def main(args: Array[String]): Unit = {
     val options = PipelineOptionsFactory.fromArgs(args: _*).withValidation().as(classOf[CloudPipelineOptions])
+    run(options)
+  }
+
+  def run(options: CloudPipelineOptions): Unit = {
 
     val bigtableConfigurator = new SerializableFunction[BigtableOptions.Builder, BigtableOptions.Builder] {
       override def apply(input: BigtableOptions.Builder): BigtableOptions.Builder = {
@@ -52,6 +56,11 @@ object CloudPipeline {
     }
 
     val cq = ByteString.copyFrom(options.getColumn, StandardCharsets.UTF_8)
+    val cf = options.getColumnFamily
+    val project = options.getProject
+    val instanceId = options.getInstanceId
+    val tableId = options.getTableId
+
     logger.info("Creating pipeline")
     val p = Pipeline.create(options)
 
@@ -75,17 +84,18 @@ object CloudPipeline {
           val m = Mutation.newBuilder().setSetCell(
             Mutation.SetCell.newBuilder()
               .setValue(metrics.toByteString)
-              .setFamilyName(options.getColumnFamily)
+              .setFamilyName(cf)
               .setColumnQualifier(cq)
               .setTimestampMicros(-1))
           c.output(KV.of(rowKey, Collections.singleton(m.build())))
         }
       }))
       .apply("Write", BigtableIO.write()
-        .withProjectId(options.getProject)
-        .withInstanceId(options.getInstanceId)
+        .withProjectId(project)
+        .withInstanceId(instanceId)
         .withBigtableOptionsConfigurator(bigtableConfigurator)
-        .withTableId(options.getTableId))
+        .withTableId(tableId))
+
 
     logger.info("Running pipeline")
     val results = p.run()

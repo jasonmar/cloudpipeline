@@ -137,6 +137,7 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 
+/*
 mainClass in assembly := Some("com.google.cloud.example.CloudPipeline")
 
 assemblyJarName in assembly := "CloudPipeline.jar"
@@ -145,3 +146,4 @@ assemblyMergeStrategy in assembly := {
   case PathList("META-INF", _) => MergeStrategy.discard
   case _ => MergeStrategy.first
 }
+ */
