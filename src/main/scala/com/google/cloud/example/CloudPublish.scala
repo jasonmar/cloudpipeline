@@ -12,7 +12,7 @@ object CloudPublish {
     System.exit(1)
   }
   def main(args: Array[String]): Unit = {
-    val options = PipelineOptionsFactory.fromArgs(args: _*).as(classOf[CloudPublishOptions])
+    val options = PipelineOptionsFactory.fromArgs(args: _*).withValidation().as(classOf[CloudPublishOptions])
     val n = 10000
     run(options.getProject, options.getTopic, n)
   }
