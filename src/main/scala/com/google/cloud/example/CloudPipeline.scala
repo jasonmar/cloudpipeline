@@ -42,7 +42,7 @@ object CloudPipeline {
   }
 
   def main(args: Array[String]): Unit = {
-    val options = PipelineOptionsFactory.fromArgs(args: _*).as(classOf[CloudPipelineOptions])
+    val options = PipelineOptionsFactory.fromArgs(args: _*).withValidation().as(classOf[CloudPipelineOptions])
 
     val bigtableConfigurator = new SerializableFunction[BigtableOptions.Builder, BigtableOptions.Builder] {
       override def apply(input: BigtableOptions.Builder): BigtableOptions.Builder = {
