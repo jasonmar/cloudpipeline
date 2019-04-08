@@ -55,7 +55,7 @@ object CloudPipeline {
     logger.info("Creating pipeline")
     val p = Pipeline.create(options)
 
-    val subscription = s"projects/${options.getProject}/subscription/${options.getSubscription}"
+    val subscription = s"projects/${options.getProject}/subscriptions/${options.getSubscription}"
 
     p.begin()
       .apply(PubsubIO.readMessagesWithAttributes()
