@@ -34,7 +34,7 @@ object QueueDepth {
       case Some(config) =>
         val metrics = MetricServiceClient.create(MetricServiceSettings.newBuilder().build())
         val t1 = System.currentTimeMillis()/1000L
-        val t0 = t1 - 300
+        val t0 = t1 - 90
 
         val subscription = config.subscription
 
