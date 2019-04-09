@@ -69,7 +69,7 @@ def init():
     app.QUERY_HANDLER = QueryHandler(project, instance_id, table_id)
 
 
-def run(host, dc, region, limit):
+def read_metrics(host, dc, region, limit):
     t = time.time()
     rows = app.QUERY_HANDLER.query(host, dc, region, t, limit)
     a = []
@@ -96,7 +96,7 @@ def metrics():
     else:
         limit = int(limit)
 
-    rows = run(host, dc, region, limit)
+    rows = read_metrics(host, dc, region, limit)
 
     a = []
     for row in rows:
@@ -104,6 +104,81 @@ def metrics():
         a.append(json.dumps(d))
 
     return Response(response='[' + ",".join(a) + ']',
+                    status=200,
+                    mimetype='application/json')
+
+
+def get_cpu(vm):
+    if 'cpu' in vm:
+        if 'cpu_data_cputime_percent' in vm['cpu']:
+            return vm['cpu']['cpu_data_cputime_percent']
+    return None
+
+
+def filter_vms_by_cpu(vm):
+    utilization = get_cpu(vm)
+    if utilization is not None:
+        return utilization > 0.8
+    return False
+
+
+@app.route('/top')
+def top():
+    host = request.args.get('host')
+    dc = request.args.get('dc')
+    region = request.args.get('region')
+    limit = request.args.get('limit')
+    top_n = request.args.get('n')
+    window = request.args.get('w')
+    t = request.args.get('t')
+
+    if t is None:
+        t = time.time()
+    else:
+        t = int(time)
+
+    if top_n is None:
+        top_n = 3
+    else:
+        top_n = int(top_n)
+
+    if limit is None:
+        limit = 1
+    else:
+        limit = int(limit)
+
+    if window is None:
+        window = 60
+    else:
+        window = int(window)
+
+    rows = app.QUERY_HANDLER.query(host=host, dc=dc, region=region, t=t, limit=limit, window=window)
+    msgs = []
+    for row in rows:
+        for cf in row.cells:
+            cell = row.cells[cf]
+            for col in cell:
+                for x in cell[col]:
+                    m = Metrics()
+                    m.ParseFromString(x.value)
+                    d = MessageToDict(m, including_default_value_fields=True, preserving_proto_field_name=True)
+                    msgs.append(d)
+
+    results = []
+    for msg in msgs:
+        ts = msg['timestamp']
+        if 'vm' in msg:
+            top_vms = []
+            highcpu = filter(filter_vms_by_cpu, msg['vm'])
+            highcpu.sort(key=get_cpu)
+            vms = highcpu[:top_n]
+            for vm in vms:
+                top_vms.append({'vmid': vm['vmid'], 'cpu': get_cpu(vm)})
+            if len(top_vms) > 0:
+                results.append({'host': msg['host_info']['host'], 'ts': ts, 'vms': top_vms})
+
+    result = [json.dumps(vm) for vm in results]
+    return Response(response='[' + ",".join(result) + ']',
                     status=200,
                     mimetype='application/json')
 
