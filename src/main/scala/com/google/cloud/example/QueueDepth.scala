@@ -41,8 +41,8 @@ object QueueDepth {
           .setName(s"projects/${config.project}")
           .setFilter(s"""metric.type = "pubsub.googleapis.com/subscription/num_undelivered_messages" AND resource.label.subscription_id = "${config.subscription}"""")
           .setInterval(TimeInterval.newBuilder()
-            .setStartTime(Timestamp.newBuilder().setSeconds(t1))
-            .setEndTime(Timestamp.newBuilder().setSeconds(t0)))
+            .setStartTime(Timestamp.newBuilder().setSeconds(t0))
+            .setEndTime(Timestamp.newBuilder().setSeconds(t1)))
           .setView(ListTimeSeriesRequest.TimeSeriesView.FULL)
 
         val response = metrics.listTimeSeries(request.build).iterateAll
