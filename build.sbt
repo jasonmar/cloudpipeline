@@ -131,7 +131,8 @@ val exAuth = ExclusionRule(organization = "com.google.auth")
 
 libraryDependencies ++= Seq(
   "io.grpc" % "grpc-all" % "1.19.0",
-  "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
+  "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0",
+"org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % "2.11.0",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.google.cloud" % "google-cloud-monitoring" % "1.69.0",
