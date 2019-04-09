@@ -18,7 +18,8 @@ object CloudQuery extends Logging {
                     host: String = "host",
                     limit: Long = 1,
                     window: Long = 60 * 60,
-                    topN: Int = 3)
+                    topN: Int = 3,
+                    minCpu: Float = 0.8f)
 
   val Parser: scopt.OptionParser[Config] =
     new scopt.OptionParser[Config]("CloudQuery") {
@@ -58,6 +59,10 @@ object CloudQuery extends Logging {
         .action{(x, c) => c.copy(topN = x)}
         .text("topN is an Int property")
 
+      opt[Double]('m',"minCpu")
+        .action{(x, c) => c.copy(minCpu = x.toFloat)}
+        .text("minCpu is a Float property")
+
       opt[Long]('w',"window")
         .action{(x, c) => c.copy(window = x)}
         .text("lookback window in seconds")
@@ -85,7 +90,7 @@ object CloudQuery extends Logging {
 
         val rows = query(t0, t1, config.limit, config.dc, config.region, config.host, tableName, bigtable)
         val metrics = readMetrics(rows)
-        processMetrics(metrics, config.topN) match {
+        processMetrics(metrics, config.topN, config.minCpu) match {
           case Some((ts,vms)) =>
             val top = vms.map{vm =>
               val (vmId, cpu) = vm
@@ -107,18 +112,24 @@ object CloudQuery extends Logging {
     ByteString.copyFromUtf8(s"$dc#$region#$host")
   }
 
-  def processMetrics(metrics: Seq[Metrics], topN: Int): Option[(Long,Seq[(String, Float)])] = {
-    metrics.headOption.map(findTopNVm(_, topN))
+  def processMetrics(metrics: Seq[Metrics], topN: Int, minCpu: Float): Option[(Long,Seq[(String, Float)])] = {
+    metrics.headOption.map(findTopNVm(_, topN, minCpu))
   }
 
-  /** Example 1 - find top N VMs by CPU utilization
+  /** Find top N VMs by CPU utilization
     *
+    * @param metric Metrics proto message
+    * @param n max results
+    * @param minCpu inclusion threshold
+    * @return
     */
-  def findTopNVm(metric: Metrics, n: Int): (Long, Seq[(String, Float)]) = {
+  def findTopNVm(metric: Metrics, n: Int, minCpu: Float): (Long, Seq[(String, Float)]) = {
     import scala.collection.JavaConverters.iterableAsScalaIterableConverter
     val vms = metric.getVmList.asScala.toArray
     util.Sorting.quickSort(vms)(VMUtilizationOrdering.reverse)
-    val top = vms.take(n)
+    val top = vms
+      .filter(_.getCpu.getCpuDataCputimePercent >= minCpu)
+      .take(n)
       .map{x => (x.getVmid, x.getCpu.getCpuDataCputimePercent)}
     (metric.getTimestamp, top)
   }
