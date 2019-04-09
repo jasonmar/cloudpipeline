@@ -20,7 +20,7 @@ object CloudPublish {
       case Some(config) =>
         run(config.project, config.topic, n = 1000, vmCount = 8)
       case _ =>
-        logger.error(s"Failed to parse args: '${args.mkString(" ")}'")
+        System.err.println(s"Failed to parse args: '${args.mkString(" ")}'")
     }
   }
 
@@ -33,6 +33,7 @@ object CloudPublish {
         .build())
       .build
     val t = System.currentTimeMillis()
+    System.out.println("Publishing")
     for (i <- 0 until n){
       val ip = s"10.${i%64}.${i%128}.${i%256}"
       val m: Metrics.Builder = Metrics.newBuilder()
@@ -225,9 +226,10 @@ object CloudPublish {
       publish(m.build, publisher)
 
       if (i % 100 == 0) {
-        logger.info(s"published $i of $n")
+        System.out.println(s"published $i of $n")
       }
     }
+    System.out.println("Finished publishing")
     publisher.shutdown()
   }
 

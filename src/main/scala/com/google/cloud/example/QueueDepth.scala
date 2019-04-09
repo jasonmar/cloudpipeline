@@ -33,11 +33,12 @@ object QueueDepth {
     Parser.parse(args, Config()) match {
       case Some(config) =>
         val metrics = MetricServiceClient.create(MetricServiceSettings.newBuilder().build())
-        val t1 = System.currentTimeMillis()
+        val t1 = System.currentTimeMillis()/1000L
         val t0 = t1 - 300
 
-        val subscription = s"projects/${config.project}/subscriptions/${config.subscription}"
+        val subscription = config.subscription
 
+        System.out.println(s"Querying $subscription")
         val request = ListTimeSeriesRequest
           .newBuilder()
           .setName(s"projects/${config.project}")
@@ -55,6 +56,7 @@ object QueueDepth {
             System.out.println(s"$seriesName num_undelivered_messages = $count")
           }
         }
+        System.out.println(s"Finished querying")
       case _ =>
         System.err.println(s"Unable to parse args '${args.mkString(" ")}'")
     }
