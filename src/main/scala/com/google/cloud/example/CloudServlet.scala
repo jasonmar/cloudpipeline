@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+import scala.util.Random
+
 object CloudServlet extends Logging {
   val Parser: scopt.OptionParser[Config] =
     new scopt.OptionParser[Config]("CloudServlet") {
@@ -85,6 +87,14 @@ object CloudServlet extends Logging {
     mapper.registerModule(DefaultScalaModule)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
+    def warmup(): Unit = {
+      val rand = new Random()
+      for (i <- 0 until 20) {
+        qh.query(host = s"h${rand.nextInt(256)}", dc = s"dc${rand.nextInt(3)}", region = s"r${rand.nextInt(4)}")
+        logger.info(s"warmup $i")
+      }
+    }
+
     override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
       response.setContentType("application/json")
       val maybeResponses = for {
@@ -100,6 +110,11 @@ object CloudServlet extends Logging {
         case _ =>
           response.getWriter.print("[]")
       }
+    }
+
+    override def init(): Unit = {
+      super.init()
+      warmup()
     }
   }
 }
