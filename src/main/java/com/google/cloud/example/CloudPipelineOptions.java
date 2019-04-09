@@ -16,10 +16,11 @@
 
 package com.google.cloud.example;
 
+import org.apache.beam.sdk.extensions.gcp.options.CloudResourceManagerOptions;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Validation;
 
-public interface CloudPipelineOptions extends EnterprisePipelineOptions {
+public interface CloudPipelineOptions extends EnterprisePipelineOptions, CloudResourceManagerOptions {
     @Description("Subscription name")
     @Validation.Required
     String getSubscription();

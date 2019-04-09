@@ -127,12 +127,14 @@ lazy val beamProvidedDependencies = Seq(
 val exGuava = ExclusionRule(organization = "com.google.guava")
 val exAuth = ExclusionRule(organization = "com.google.auth")
 
-//libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
+libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
 
 libraryDependencies ++= Seq(
   "io.grpc" % "grpc-all" % "1.19.0",
+  "com.google.guava" % "guava" % "27.1-jre",
   "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0",
-"org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
+  "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
+  "org.apache.beam" % "beam-sdks-java-io-google-cloud-platform" % "2.11.0",
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % "2.11.0",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.google.cloud" % "google-cloud-monitoring" % "1.69.0",
@@ -143,7 +145,6 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 
-/*
 mainClass in assembly := Some("com.google.cloud.example.CloudPipeline")
 
 assemblyJarName in assembly := "CloudPipeline.jar"
@@ -152,4 +153,7 @@ assemblyMergeStrategy in assembly := {
   case PathList("META-INF", _) => MergeStrategy.discard
   case _ => MergeStrategy.first
 }
- */
+
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("com.google.common.**" -> "shadedguava.@1").inAll
+)

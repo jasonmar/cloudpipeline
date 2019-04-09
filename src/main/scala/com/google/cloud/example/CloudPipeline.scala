@@ -25,7 +25,7 @@ import com.google.cloud.example.protobuf.Metrics
 import com.google.protobuf.ByteString
 import org.apache.beam.sdk.Pipeline
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableIO
-import org.apache.beam.sdk.io.gcp.pubsub.{PubsubIO, PubsubMessage}
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO
 import org.apache.beam.sdk.options.PipelineOptionsFactory
 import org.apache.beam.sdk.transforms.DoFn.ProcessElement
 import org.apache.beam.sdk.transforms.{DoFn, ParDo, SerializableFunction}
@@ -39,9 +39,11 @@ object CloudPipeline extends Logging {
   }
 
   private val BigtableConfigurator = new SerializableFunction[BigtableOptions.Builder, BigtableOptions.Builder] {
-    override def apply(input: BigtableOptions.Builder): BigtableOptions.Builder = {
-      input.setUserAgent("CloudPipeline")
-        .setBulkOptions(BulkOptions.builder().enableBulkMutationThrottling().build())
+    override def apply(options: BigtableOptions.Builder): BigtableOptions.Builder = {
+      options
+        .setUserAgent("CloudPipeline")
+        .setBulkOptions(BulkOptions.builder()
+          .enableBulkMutationThrottling().build())
     }
   }
 
