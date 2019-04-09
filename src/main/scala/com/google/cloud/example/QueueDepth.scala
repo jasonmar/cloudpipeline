@@ -36,17 +36,19 @@ object QueueDepth {
         val t1 = System.currentTimeMillis()
         val t0 = t1 - 300
 
+        val subscription = s"projects/${config.project}/subscriptions/${config.subscription}"
+
         val request = ListTimeSeriesRequest
           .newBuilder()
           .setName(s"projects/${config.project}")
-          .setFilter(s"""metric.type = "pubsub.googleapis.com/subscription/num_undelivered_messages" AND resource.label.subscription_id = "${config.subscription}"""")
+          .setFilter(s"""metric.type = "pubsub.googleapis.com/subscription/num_undelivered_messages" AND resource.label.subscription_id = "$subscription"""")
           .setInterval(TimeInterval.newBuilder()
             .setStartTime(Timestamp.newBuilder().setSeconds(t0))
             .setEndTime(Timestamp.newBuilder().setSeconds(t1)))
           .setView(ListTimeSeriesRequest.TimeSeriesView.FULL)
 
-        val response = metrics.listTimeSeries(request.build).iterateAll
-        for (series <- response.asScala) {
+        val response = metrics.listTimeSeries(request.build)
+        for (series <- response.iterateAll.asScala.toArray) {
           val seriesName = series.getResource.getLabelsMap.getOrDefault("subscription_id", "")
           series.getPointsList.asScala.headOption.foreach{p =>
             val count = p.getValue.getInt64Value
