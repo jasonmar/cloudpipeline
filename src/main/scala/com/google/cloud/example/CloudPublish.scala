@@ -2,20 +2,34 @@ package com.google.cloud.example
 
 import com.google.api.core.ApiFuture
 import com.google.api.gax.batching.BatchingSettings
-import com.google.cloud.example.CloudPublishConfig.Config
 import com.google.cloud.example.protobuf._
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.pubsub.v1.{ProjectTopicName, PubsubMessage}
-import org.slf4j.LoggerFactory
 
 object CloudPublish extends Logging {
+  case class Config(project: String = "myproject",
+                    topic: String = "mytopic")
 
-  def usage(): Unit = {
-    System.out.println("Usage: CloudPublish <project> <topic>")
-    System.exit(1)
-  }
+  val Parser: scopt.OptionParser[Config] =
+    new scopt.OptionParser[Config]("CloudPublish") {
+      head("CloudPublish", "3.x")
+
+      opt[String]('p', "project")
+        .action{(x, c) => c.copy(project = x)}
+        .text("projectId is a string property")
+
+      opt[String]('t', "topic")
+        .action{(x, c) => c.copy(topic = x)}
+        .text("topic is a string property")
+
+      note("Publishes Metrics to Pubsub")
+
+      help("help")
+        .text("prints this usage text")
+    }
+
   def main(args: Array[String]): Unit = {
-    CloudPublishConfig.Parser.parse(args, Config()) match {
+    Parser.parse(args, Config()) match {
       case Some(config) =>
         run(config.project, config.topic, n = 1000, vmCount = 8)
       case _ =>
@@ -32,7 +46,7 @@ object CloudPublish extends Logging {
         .build())
       .build
     val t = System.currentTimeMillis()
-    System.out.println("Publishing")
+    logger.info("Publishing")
     for (i <- 0 until n){
       val ip = s"10.${i%64}.${i%128}.${i%256}"
       val m: Metrics.Builder = Metrics.newBuilder()
@@ -225,10 +239,10 @@ object CloudPublish extends Logging {
       publish(m.build, publisher)
 
       if (i % 100 == 0 & i > 0) {
-        System.out.println(s"published $i of $n")
+        logger.info(s"published $i of $n")
       }
     }
-    System.out.println("Finished publishing")
+    logger.info("Finished publishing")
     publisher.shutdown()
   }
 
