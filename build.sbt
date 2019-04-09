@@ -124,6 +124,14 @@ lazy val beamProvidedDependencies = Seq(
   "com.pholser" % "junit-quickcheck-core" % "0.8"
 )
 
+val servletDependencies = Seq(
+  "javax.servlet" % "javax.servlet-api" % "4.0.1",
+  "org.eclipse.jetty" % "jetty-server" % "9.4.14.v20181114",
+  "org.eclipse.jetty" % "jetty-servlet" % "9.4.14.v20181114",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.8"
+)
+
 val exGuava = ExclusionRule(organization = "com.google.guava")
 val exAuth = ExclusionRule(organization = "com.google.auth")
 
@@ -145,6 +153,8 @@ libraryDependencies ++= Seq(
 ).map(_ excludeAll(exGuava, exAuth))
 
 libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
+
+libraryDependencies ++= servletDependencies
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 

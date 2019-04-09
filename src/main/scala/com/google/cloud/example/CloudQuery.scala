@@ -11,8 +11,8 @@ import scala.collection.mutable.ArrayBuffer
 
 object CloudQuery extends Logging {
   case class Config(project: String = "myproject",
-                    instance: String = "myinstance",
-                    table: String = "mytable",
+                    instance: String = "metrics",
+                    table: String = "metrics",
                     dc: String = "dc",
                     region: String = "region",
                     host: String = "host",
@@ -20,6 +20,9 @@ object CloudQuery extends Logging {
                     window: Long = 60 * 60,
                     topN: Int = 3,
                     minCpu: Float = 0.8f)
+
+  case class VMCpu(vmid: String, cpu: Float)
+  case class Response(host: String, ts: Long, vms: Seq[VMCpu])
 
   val Parser: scopt.OptionParser[Config] =
     new scopt.OptionParser[Config]("CloudQuery") {
@@ -83,26 +86,51 @@ object CloudQuery extends Logging {
           .build()
         val session = new BigtableSession(opts)
         val bigtable = session.getDataClient
-
-        val tableName = s"projects/${config.project}/instances/${config.instance}/tables/${config.table}"
-        val t1 = System.currentTimeMillis()/1000
-        val t0 = t1 - config.window
-
-        val rows = query(t0, t1, config.limit, config.dc, config.region, config.host, tableName, bigtable)
-        val metrics = readMetrics(rows)
-        processMetrics(metrics, config.topN, config.minCpu) match {
-          case Some((ts,vms)) =>
-            val top = vms.map{vm =>
-              val (vmId, cpu) = vm
-              s"$vmId\t$cpu"
-            }.mkString("\n")
-            logger.info(s"top ${config.topN} for ${config.host} at t = $ts:\n"+top)
-          case _ =>
-            logger.info(s"no data for ${config.host}")
-        }
+        run(config, bigtable)
 
       case _ =>
     }
+  }
+
+  /**
+    *
+    * @param config
+    * @param bigtable
+    */
+  def run(config: Config, bigtable: BigtableDataClient): Unit = {
+    val t = System.currentTimeMillis()/1000
+    val tableName = s"projects/${config.project}/instances/${config.instance}/tables/${config.table}"
+    val responses = run1(t, config.window, config.limit, config.dc, config.region, config.host, config.topN, config.minCpu, tableName, bigtable)
+    if (responses.isEmpty)
+      logger.info(s"no data for ${config.host}")
+    else
+      responses.foreach{response =>
+        val vms = response.vms
+          .map(vm => s"${vm.vmid}\t${vm.cpu}")
+          .mkString("\n")
+        logger.info(s"top ${config.topN} for ${config.host} at t = ${response.ts}:\n$vms")
+      }
+  }
+
+  /**
+    *
+    * @param t
+    * @param window
+    * @param limit
+    * @param dc
+    * @param region
+    * @param host
+    * @param topN
+    * @param minCpu
+    * @param tableName
+    * @param bigtable
+    * @return
+    */
+  def run1(t: Long, window: Long, limit: Long, dc: String, region: String, host: String, topN: Int, minCpu: Float, tableName: String, bigtable: BigtableDataClient): Seq[Response] = {
+    val rows = query(t0 = t-window, t1 = t, limit, dc, region, host, tableName, bigtable)
+    val metrics = readMetrics(rows)
+    processMetrics(metrics, topN, minCpu)
+      .map{x => Response(host, ts = x._1, vms = x._2)}
   }
 
   def createRowKey(metric: String): ByteString = {
@@ -112,8 +140,8 @@ object CloudQuery extends Logging {
     ByteString.copyFromUtf8(s"$dc#$region#$host")
   }
 
-  def processMetrics(metrics: Seq[Metrics], topN: Int, minCpu: Float): Option[(Long,Seq[(String, Float)])] = {
-    metrics.headOption.map(findTopNVm(_, topN, minCpu))
+  def processMetrics(metrics: Seq[Metrics], topN: Int, minCpu: Float): Seq[(Long,Seq[VMCpu])] = {
+    metrics.map(findTopNVm(_, topN, minCpu))
   }
 
   /** Find top N VMs by CPU utilization
@@ -123,14 +151,14 @@ object CloudQuery extends Logging {
     * @param minCpu inclusion threshold
     * @return
     */
-  def findTopNVm(metric: Metrics, n: Int, minCpu: Float): (Long, Seq[(String, Float)]) = {
+  def findTopNVm(metric: Metrics, n: Int, minCpu: Float): (Long, Seq[VMCpu]) = {
     import scala.collection.JavaConverters.iterableAsScalaIterableConverter
     val vms = metric.getVmList.asScala.toArray
     util.Sorting.quickSort(vms)(VMUtilizationOrdering.reverse)
     val top = vms
       .filter(_.getCpu.getCpuDataCputimePercent >= minCpu)
       .take(n)
-      .map{x => (x.getVmid, x.getCpu.getCpuDataCputimePercent)}
+      .map{x => VMCpu(x.getVmid, x.getCpu.getCpuDataCputimePercent)}
     (metric.getTimestamp, top)
   }
 
