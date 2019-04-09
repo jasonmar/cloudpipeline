@@ -31,10 +31,8 @@ import org.apache.beam.sdk.transforms.DoFn.ProcessElement
 import org.apache.beam.sdk.transforms.{DoFn, ParDo, SerializableFunction}
 import org.apache.beam.sdk.values.KV
 import org.joda.time.Duration
-import org.slf4j.LoggerFactory
 
-object CloudPipeline {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+object CloudPipeline extends Logging {
 
   /** Query metrics for (dc,region,host)
     */

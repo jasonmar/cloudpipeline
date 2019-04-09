@@ -8,8 +8,7 @@ import com.google.cloud.pubsub.v1.Publisher
 import com.google.pubsub.v1.{ProjectTopicName, PubsubMessage}
 import org.slf4j.LoggerFactory
 
-object CloudPublish {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+object CloudPublish extends Logging {
 
   def usage(): Unit = {
     System.out.println("Usage: CloudPublish <project> <topic>")
@@ -225,7 +224,7 @@ object CloudPublish {
       }
       publish(m.build, publisher)
 
-      if (i % 100 == 0) {
+      if (i % 100 == 0 & i > 0) {
         System.out.println(s"published $i of $n")
       }
     }

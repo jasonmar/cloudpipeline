@@ -10,8 +10,7 @@ import com.google.protobuf.ByteString
 
 import scala.collection.mutable.ArrayBuffer
 
-object CloudQuery {
-
+object CloudQuery extends Logging {
   def query(t: Long, window: Long, limit: Long, dc: String, region: String, host: String, tableName: String, client: BigtableDataClient): ResultScanner[Row] = {
     val request = ReadRowsRequest.newBuilder()
       .setTableName(tableName)

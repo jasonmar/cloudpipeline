@@ -137,7 +137,8 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.google.cloud" % "google-cloud-monitoring" % "1.69.0",
   "com.google.api.grpc" % "grpc-google-cloud-monitoring-v3" % "1.51.0",
-  "com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth)
+  "com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth),
+  "org.slf4j" % "slf4j-simple" % "1.6.2"
 )
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
