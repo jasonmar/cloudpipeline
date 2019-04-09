@@ -127,7 +127,7 @@ lazy val beamProvidedDependencies = Seq(
 val exGuava = ExclusionRule(organization = "com.google.guava")
 val exAuth = ExclusionRule(organization = "com.google.auth")
 
-libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
+//libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
 
 libraryDependencies ++= Seq(
   "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
