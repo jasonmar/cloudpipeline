@@ -16,11 +16,10 @@
 
 package com.google.cloud.example;
 
-import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Validation;
 
-public interface CloudPipelineOptions extends DataflowPipelineOptions {
+public interface CloudPipelineOptions extends EnterprisePipelineOptions {
     @Description("Subscription name")
     @Validation.Required
     String getSubscription();

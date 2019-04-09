@@ -12,7 +12,7 @@ object CloudPublish extends Logging {
 
   val Parser: scopt.OptionParser[Config] =
     new scopt.OptionParser[Config]("CloudPublish") {
-      head("CloudPublish", "3.x")
+      head("CloudPublish", "0.1")
 
       opt[String]('p', "project")
         .action{(x, c) => c.copy(project = x)}

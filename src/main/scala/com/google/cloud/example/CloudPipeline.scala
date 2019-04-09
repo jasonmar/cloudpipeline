@@ -21,7 +21,7 @@ import java.util.Collections
 
 import com.google.bigtable.v2.Mutation
 import com.google.cloud.bigtable.config.{BigtableOptions, BulkOptions}
-import com.google.cloud.example.protobuf.{HostInfo, Metrics}
+import com.google.cloud.example.protobuf.Metrics
 import com.google.protobuf.ByteString
 import org.apache.beam.sdk.Pipeline
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableIO
@@ -33,28 +33,19 @@ import org.apache.beam.sdk.values.KV
 import org.joda.time.Duration
 
 object CloudPipeline extends Logging {
-
-  /** Query metrics for (dc,region,host)
-    */
-  def buildRowKey(h: HostInfo, ts: Long): ByteString = {
-    val k = s"${h.getDc}#${h.getCloudRegion}#${h.getHost}#$ts"
-    ByteString.copyFrom(k, StandardCharsets.UTF_8)
-  }
-
   def main(args: Array[String]): Unit = {
     val options = PipelineOptionsFactory.fromArgs(args: _*).withValidation().as(classOf[CloudPipelineOptions])
     run(options)
   }
 
-  def run(options: CloudPipelineOptions): Unit = {
-
-    val bigtableConfigurator = new SerializableFunction[BigtableOptions.Builder, BigtableOptions.Builder] {
-      override def apply(input: BigtableOptions.Builder): BigtableOptions.Builder = {
-        input.setUserAgent("CloudPipeline")
-          .setBulkOptions(BulkOptions.builder().enableBulkMutationThrottling().build())
-      }
+  private val BigtableConfigurator = new SerializableFunction[BigtableOptions.Builder, BigtableOptions.Builder] {
+    override def apply(input: BigtableOptions.Builder): BigtableOptions.Builder = {
+      input.setUserAgent("CloudPipeline")
+        .setBulkOptions(BulkOptions.builder().enableBulkMutationThrottling().build())
     }
+  }
 
+  def run(options: CloudPipelineOptions): Unit = {
     val cq = ByteString.copyFrom(options.getColumn, StandardCharsets.UTF_8)
     val cf = options.getColumnFamily
     val project = options.getProject
@@ -67,20 +58,13 @@ object CloudPipeline extends Logging {
     val subscription = s"projects/${options.getProject}/subscriptions/${options.getSubscription}"
 
     p.begin()
-      .apply(PubsubIO.readMessagesWithAttributes()
+      .apply(PubsubIO.readProtos(classOf[Metrics])
         .fromSubscription(subscription))
-      .apply(ParDo.of(new DoFn[PubsubMessage,Metrics] {
-        @ProcessElement
-        private[example] def process(c: ProcessContext): Unit = {
-          val metrics = Metrics.parseFrom(c.element().getPayload)
-          c.output(metrics)
-        }
-      }))
       .apply(ParDo.of(new DoFn[Metrics,KV[ByteString,java.lang.Iterable[Mutation]]] {
         @ProcessElement
         private[example] def process(c: ProcessContext): Unit = {
           val metrics: Metrics = c.element()
-          val rowKey = buildRowKey(metrics.getHostInfo, metrics.getTimestamp/1000L)
+          val rowKey = RowKeys.byHostInfo(metrics.getHostInfo, metrics.getTimestamp/1000L)
           val m = Mutation.newBuilder().setSetCell(
             Mutation.SetCell.newBuilder()
               .setValue(metrics.toByteString)
@@ -93,9 +77,8 @@ object CloudPipeline extends Logging {
       .apply("Write", BigtableIO.write()
         .withProjectId(project)
         .withInstanceId(instanceId)
-        .withBigtableOptionsConfigurator(bigtableConfigurator)
+        .withBigtableOptionsConfigurator(BigtableConfigurator)
         .withTableId(tableId))
-
 
     logger.info("Running pipeline")
     val results = p.run()
