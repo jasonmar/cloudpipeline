@@ -6,6 +6,8 @@ import com.google.cloud.example.protobuf._
 import com.google.cloud.pubsub.v1.Publisher
 import com.google.pubsub.v1.{ProjectTopicName, PubsubMessage}
 
+import scala.util.Random
+
 object CloudPublish extends Logging {
   case class Config(project: String = "myproject",
                     topic: String = "mytopic")
@@ -46,6 +48,7 @@ object CloudPublish extends Logging {
         .build())
       .build
     val t = System.currentTimeMillis()
+    val rand = new Random()
     logger.info("Publishing")
     for (i <- 0 until n){
       val ip = s"10.${i%64}.${i%128}.${i%256}"
@@ -53,7 +56,7 @@ object CloudPublish extends Logging {
         .setHostInfo(HostInfo.newBuilder()
           .setCloudRegion(s"r${i%3}")
           .setDc(s"dc${i%4}")
-          .setHost(s"h${i%100}")
+          .setHost(s"h$i")
           .setIp(ip)
           .setMdom("mdom")
           .setNodetype("nodetype")
@@ -100,9 +103,9 @@ object CloudPublish extends Logging {
             .setWriteTime(0)
           )
           .setSystemMetrics(SystemMetrics.newBuilder()
-            .setLoad1(0)
-            .setLoad5(0)
-            .setLoad15(0)
+            .setLoad1(rand.nextFloat())
+            .setLoad5(rand.nextFloat())
+            .setLoad15(rand.nextFloat())
             .setNCpus(16)
             .setNUsers(1)
             .setUptimeFormat("fmt")
@@ -210,7 +213,7 @@ object CloudPublish extends Logging {
             .setAggregateSystemTime(0)
             .setAggregateUserTime(0)
             .setCpuDataCputime(0)
-            .setCpuDataCputimePercent(0))
+            .setCpuDataCputimePercent(rand.nextFloat()))
           .setDisk(VMDiskMetrics.newBuilder()
             .setDiskName(s"/dev/sda")
             .setErrors(0)

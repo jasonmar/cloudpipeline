@@ -1,7 +1,5 @@
 package com.google.cloud.example
 
-import java.nio.charset.StandardCharsets
-
 import com.google.cloud.example.protobuf.HostInfo
 import com.google.protobuf.ByteString
 

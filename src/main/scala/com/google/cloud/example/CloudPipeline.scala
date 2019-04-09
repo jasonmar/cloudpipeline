@@ -60,9 +60,9 @@ object CloudPipeline extends Logging {
     val subscription = s"projects/${options.getProject}/subscriptions/${options.getSubscription}"
 
     p.begin()
-      .apply(PubsubIO.readProtos(classOf[Metrics])
+      .apply("Read Metrics", PubsubIO.readProtos(classOf[Metrics])
         .fromSubscription(subscription))
-      .apply(ParDo.of(new DoFn[Metrics,KV[ByteString,java.lang.Iterable[Mutation]]] {
+      .apply("Create Row Keys", ParDo.of(new DoFn[Metrics,KV[ByteString,java.lang.Iterable[Mutation]]] {
         @ProcessElement
         private[example] def process(c: ProcessContext): Unit = {
           val metrics: Metrics = c.element()
@@ -76,7 +76,7 @@ object CloudPipeline extends Logging {
           c.output(KV.of(rowKey, Collections.singleton(m.build())))
         }
       }))
-      .apply("Write", BigtableIO.write()
+      .apply("Write to Bigtable", BigtableIO.write()
         .withProjectId(project)
         .withInstanceId(instanceId)
         .withBigtableOptionsConfigurator(BigtableConfigurator)

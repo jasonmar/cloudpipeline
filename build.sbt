@@ -41,7 +41,7 @@ lazy val beamProvidedDependencies = Seq(
   "net.bytebuddy" % "byte-buddy" % "1.9.3",
   "org.apache.commons" % "commons-compress" % "1.16.1",
   "org.apache.commons" % "commons-csv" % "1.4",
-  "commons-io" % "commons-io" % "1.3.2",
+  //"commons-io" % "commons-io" % "1.3.2",
   "commons-io" % "commons-io" % "2.5",
   "org.apache.commons" % "commons-lang3" % "3.6",
   "org.apache.commons" % "commons-math3" % "3.6.1",
@@ -127,21 +127,24 @@ lazy val beamProvidedDependencies = Seq(
 val exGuava = ExclusionRule(organization = "com.google.guava")
 val exAuth = ExclusionRule(organization = "com.google.auth")
 
-libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
+libraryDependencies ++= Seq(
+  "com.google.guava" % "guava" % "20.0",
+  "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0" excludeAll exGuava
+)
 
 libraryDependencies ++= Seq(
   "io.grpc" % "grpc-all" % "1.19.0",
-  "com.google.guava" % "guava" % "27.1-jre",
-  "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0",
   "org.apache.beam" % "beam-sdks-java-extensions-google-cloud-platform-core" % "2.11.0",
   "org.apache.beam" % "beam-sdks-java-io-google-cloud-platform" % "2.11.0",
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % "2.11.0",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "com.google.cloud" % "google-cloud-monitoring" % "1.69.0",
   "com.google.api.grpc" % "grpc-google-cloud-monitoring-v3" % "1.51.0",
-  "com.google.cloud" % "google-cloud-pubsub" % "1.66.0" excludeAll(exGuava, exAuth),
+  "com.google.cloud" % "google-cloud-pubsub" % "1.66.0",
   "org.slf4j" % "slf4j-simple" % "1.6.2"
-)
+).map(_ excludeAll(exGuava, exAuth))
+
+libraryDependencies ++= beamProvidedDependencies.map(_ % Provided)
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
 
@@ -155,5 +158,5 @@ assemblyMergeStrategy in assembly := {
 }
 
 assemblyShadeRules in assembly := Seq(
-  ShadeRule.rename("com.google.common.**" -> "shadedguava.@1").inAll
+  ShadeRule.rename("com.google.common.**" -> "sguava.@1").inAll
 )
