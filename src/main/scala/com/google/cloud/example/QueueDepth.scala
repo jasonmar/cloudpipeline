@@ -51,7 +51,7 @@ object QueueDepth {
         val response = metrics.listTimeSeries(request.build)
         for (series <- response.iterateAll.asScala.toArray) {
           val seriesName = series.getResource.getLabelsMap.getOrDefault("subscription_id", "")
-          series.getPointsList.asScala.headOption.foreach{p =>
+          series.getPointsList.asScala.lastOption.foreach{p =>
             val count = p.getValue.getInt64Value
             System.out.println(s"$seriesName num_undelivered_messages = $count")
           }
