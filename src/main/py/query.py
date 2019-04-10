@@ -73,7 +73,7 @@ def init():
 
 
 def read_metrics(host, dc, region, limit):
-    t = time.time()
+    t = int(time.time())
     rows = app.QUERY_HANDLER.query(host, dc, region, t, limit)
     a = []
     for row in rows:
