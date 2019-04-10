@@ -48,9 +48,10 @@ class QueryHandler(object):
         self.table = self.instance.table(self.table_id)
 
     def query(self, host, dc, region, t, limit=1, window=60):
-        t0 = t - window
+        t0 = int(t) - window
+        t1 = int(t)
         start_key = rowkey(host, dc, region, t0)
-        end_key = rowkey(host, dc, region, t)
+        end_key = rowkey(host, dc, region, t1)
         row_set = RowSet()
         row_set.add_row_range(RowRange(start_key, end_key))
         return self.table.read_rows(
@@ -72,9 +73,9 @@ def init():
     app.QUERY_HANDLER = QueryHandler(project, instance_id, table_id)
 
 
-def read_metrics(host, dc, region, limit):
+def read_metrics(host, dc, region, limit, window):
     t = int(time.time())
-    rows = app.QUERY_HANDLER.query(host, dc, region, t, limit)
+    rows = app.QUERY_HANDLER.query(host, dc, region, t, limit, window)
     a = []
     for row in rows:
         for cf in row.cells:
@@ -93,13 +94,19 @@ def metrics():
     dc = request.args.get('dc')
     region = request.args.get('region')
     limit = request.args.get('limit')
+    window = request.args.get('w')
 
     if limit is None:
         limit = 1
     else:
         limit = int(limit)
 
-    rows = read_metrics(host, dc, region, limit)
+    if window is None:
+        window = 60 * 60  # 1 hour
+    else:
+        window = int(window)
+
+    rows = read_metrics(host, dc, region, limit, window)
 
     a = []
     for row in rows:
@@ -136,9 +143,9 @@ def top():
     t = request.args.get('t')
 
     if t is None:
-        t = time.time()
+        t = int(time.time())
     else:
-        t = int(time)
+        t = int(t)
 
     if top_n is None:
         top_n = 3
@@ -151,7 +158,7 @@ def top():
         limit = int(limit)
 
     if window is None:
-        window = 60
+        window = 3600
     else:
         window = int(window)
 
