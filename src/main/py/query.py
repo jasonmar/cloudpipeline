@@ -184,8 +184,7 @@ def top():
             vms = highcpu[:top_n]
             for vm in vms:
                 top_vms.append({'vmid': vm['vmid'], 'cpu': get_cpu(vm)})
-            if len(top_vms) > 0:
-                results.append({'host': msg['host_info']['host'], 'ts': ts, 'vms': top_vms})
+            results.append({'host': msg['host_info']['host'], 'ts': ts, 'vms': top_vms})
 
     result = [json.dumps(vm) for vm in results]
     return Response(response='[' + ",".join(result) + ']',
