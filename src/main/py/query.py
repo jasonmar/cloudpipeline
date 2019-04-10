@@ -21,7 +21,7 @@ REST API with Bigtable storage
 
 from google.cloud import bigtable
 from google.cloud.bigtable import row_filters
-from google.cloud.bigtable import row_set
+from google.cloud.bigtable.row_set import RowSet,RowRange
 from proto.instancemetric_pb2 import Metrics
 from google.protobuf.json_format import MessageToDict
 import json
@@ -48,12 +48,15 @@ class QueryHandler(object):
         self.table = self.instance.table(self.table_id)
 
     def query(self, host, dc, region, t, limit=1, window=60):
-        start_key = rowkey(host, dc, region, t-window)
+        t0 = t - window
+        start_key = rowkey(host, dc, region, t0)
         end_key = rowkey(host, dc, region, t)
+        row_set = RowSet()
+        row_set.add_row_range(RowRange(start_key, end_key))
         return self.table.read_rows(
             limit=limit,
             filter_=row_filters.CellsColumnLimitFilter(1),
-            row_set=row_set.RowSet().add_row_range_from_keys(start_key=start_key, end_key=end_key)
+            row_set=row_set
         )
 
 
