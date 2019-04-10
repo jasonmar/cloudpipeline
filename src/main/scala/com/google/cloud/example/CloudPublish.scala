@@ -10,7 +10,9 @@ import scala.util.Random
 
 object CloudPublish extends Logging {
   case class Config(project: String = "myproject",
-                    topic: String = "mytopic")
+                    topic: String = "mytopic",
+                    vmCount: Int = 1000,
+                    hostCount: Int = 1000)
 
   val Parser: scopt.OptionParser[Config] =
     new scopt.OptionParser[Config]("CloudPublish") {
@@ -24,6 +26,14 @@ object CloudPublish extends Logging {
         .action{(x, c) => c.copy(topic = x)}
         .text("topic is a string property")
 
+      opt[Int]('n', "hostCount")
+        .action{(x, c) => c.copy(hostCount = x)}
+        .text("hostCount is a string property")
+
+      opt[Int]('v', "vmCount")
+        .action{(x, c) => c.copy(vmCount = x)}
+        .text("vmCount is a string property")
+
       note("Publishes Metrics to Pubsub")
 
       help("help")
@@ -33,7 +43,7 @@ object CloudPublish extends Logging {
   def main(args: Array[String]): Unit = {
     Parser.parse(args, Config()) match {
       case Some(config) =>
-        run(config.project, config.topic, n = 1000, vmCount = 8)
+        run(config.project, config.topic, n = config.hostCount, vmCount = config.vmCount)
       case _ =>
         System.err.println(s"Failed to parse args: '${args.mkString(" ")}'")
     }
